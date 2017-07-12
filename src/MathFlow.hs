@@ -39,6 +39,10 @@ type family IsMatMul (m :: [Nat]) (o :: [Nat]) (n :: [Nat]) :: Bool where
     (Tail (Tail (Reverse n))) :== (Tail (Tail (Reverse o)))
 
 
+type family IsSameProduct (m :: [Nat]) (n :: [Nat]) :: Bool where
+  IsSameProduct (m:mx) (n:nx) = m :== n :&& (Product mx :== Product nx)
+  IsSameProduct mx nx = Product mx :== Product nx
+
 
 data T (n::[Nat]) a =
     T a
@@ -48,7 +52,7 @@ data T (n::[Nat]) a =
   | TRep (T (Tail n) a)
   | TTr (T (Reverse n) a)
   | forall o m. (IsMatMul m o n ~ True) => TMatMul (T m a) (T o a)
-  | forall m. (Product m ~ Product n) =>  TReshape (T m a)
+  | forall m. (IsSameProduct m n ~ True) =>  TReshape (T m a)
   | forall o m.
     (Last n ~ Last o,
      Last m ~ Head (Tail (Reverse o)),
@@ -114,14 +118,14 @@ testConvNet1 x1 =
       y2 = TMaxPool opt y1 :: T '[s,IMAGE_SIZE_4,IMAGE_SIZE_4,64] Int
   in y2
 
-testConvNet2 :: T '[BATCH_SIZE,IMAGE_SIZE_4,IMAGE_SIZE_4,64] Int -> T '[BATCH_SIZE,384] Int
+testConvNet2 :: forall s. T '[s,IMAGE_SIZE_4,IMAGE_SIZE_4,64] Int -> T '[s,384] Int
 testConvNet2 x' = 
-  let x = TReshape x' :: T '[BATCH_SIZE,IMAGE_SIZE_4*IMAGE_SIZE_4*64] Int
+  let x = TReshape x' :: T '[s,IMAGE_SIZE_4*IMAGE_SIZE_4*64] Int
       w = T 1 :: T '[IMAGE_SIZE_4*IMAGE_SIZE_4*64,384] Int
       b = T 1 :: T '[384] Int
-      z = TRep b :: T '[BATCH_SIZE,384] Int
-      y' = (x %* w) .+ z :: T '[BATCH_SIZE,384] Int
-      y = TReLu y' :: T '[BATCH_SIZE,384] Int
+      z = TRep b :: T '[s,384] Int
+      y' = (x %* w) .+ z :: T '[s,384] Int
+      y = TReLu y' :: T '[s,384] Int
   in y
 
 testConvNet3 :: forall s. T '[s,384] Int -> T '[s,192] Int
