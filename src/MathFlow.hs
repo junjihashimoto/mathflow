@@ -25,11 +25,18 @@ type family IsZero (n :: Nat) :: Bool where
   IsZero 0 = True
   IsZero _ = False
 
-type family IsSubSamp (n :: [Nat]) (m :: [Nat]) (o :: [Nat]) :: Bool where
+type family IsSubSamp (f :: [Nat]) (m :: [Nat]) (n :: [Nat]) :: Bool where
   IsSubSamp (1:fs) (m:ms) (n:ns) = IsSubSamp fs ms ns
   IsSubSamp (f:fs) (m:ms) (n:ns) = ((n * f) :== m) :&& (IsSubSamp fs ms ns)
   IsSubSamp '[] '[] '[] = True
   IsSubSamp _ _ _ = False
+
+type family IsMatMul (m :: [Nat]) (o :: [Nat]) (n :: [Nat]) :: Bool where
+  IsMatMul m o n =
+    Last n :== Last o :&&
+    Last m :== Head (Tail (Reverse o)) :&&
+    (Tail (Reverse n)) :== (Tail (Reverse m)) :&&
+    (Tail (Tail (Reverse n))) :== (Tail (Tail (Reverse o)))
 
 
 
@@ -40,13 +47,7 @@ data T (n::[Nat]) a =
   | TMul (T n a) (T n a)
   | TRep (T (Tail n) a)
   | TTr (T (Reverse n) a)
-  | forall o m.
-    (Last n ~ Last o,
-     Last m ~ Head (Tail (Reverse o)),
-     (Tail (Reverse n)) ~ (Tail (Reverse m)),
-     (Tail (Tail (Reverse n))) ~ (Tail (Tail (Reverse o)))
-    ) =>
-    TMatMul (T m a) (T o a)
+  | forall o m. (IsMatMul m o n ~ True) => TMatMul (T m a) (T o a)
   | forall m. (Product m ~ Product n) =>  TReshape (T m a)
   | forall o m.
     (Last n ~ Last o,
@@ -70,17 +71,12 @@ data T (n::[Nat]) a =
 (.*) :: T n a -> T n a -> T n a 
 (.*) = TMul
 
-(%*) :: forall o m n a.
-        (Last n ~ Last o,
-         Last m ~ Head (Tail (Reverse o)),
-         (Tail (Reverse n)) ~ (Tail (Reverse m)),
-         (Tail (Tail (Reverse n))) ~ (Tail (Tail (Reverse o)))
-        ) =>
-        T m a -> T o a -> T n a
+(%*) :: forall o m n a. (IsMatMul m o n ~ True)
+     => T m a -> T o a -> T n a
 (%*) a b = TMatMul a b
 
 
-testSingleNet :: T '[s,10] Int
+testSingleNet :: forall s. T '[s,10] Int
 testSingleNet = 
   let x = T 1 :: T '[s,784] Int
       w = T 1 :: T '[784,10] Int
