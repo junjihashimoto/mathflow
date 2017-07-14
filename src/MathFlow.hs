@@ -12,6 +12,8 @@
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE TypeInType #-}
 
+{-# LANGUAGE OverloadedStrings #-}
+
 module MathFlow where
 
 import GHC.TypeLits
@@ -20,6 +22,8 @@ import Data.Singletons
 import Data.Singletons.TypeLits
 import Data.Singletons.TH
 import Data.Promotion.Prelude
+import Data.String
+import Data.Monoid (Monoid,(<>))
 
 type family IsZero (n :: Nat) :: Bool where
   IsZero 0 = True
@@ -65,6 +69,17 @@ data T (n::[Nat]) a =
   | TNorm (T n a)
   | forall f m. (IsSubSamp f m n ~ True) => TSubSamp (Sing f) (T m a)
   | TFunc String (T n a)
+  | TLabel String (T n a)
+
+dim :: T n a -> [Integer]
+dim t = fromSing $ ty t
+  where
+    ty :: T n a -> Sing n
+    ty _ = undefined
+
+dim' :: Sing (n::[Nat]) -> [Integer]
+dim' t = fromSing t
+
 
 (.+) :: T n a -> T n a -> T n a 
 (.+) = TAdd
@@ -79,73 +94,50 @@ data T (n::[Nat]) a =
      => T m a -> T o a -> T n a
 (%*) a b = TMatMul a b
 
+(<==) :: String -> T n a  -> T n a 
+(<==) = TLabel
 
-testSingleNet :: forall s. T '[s,10] Int
-testSingleNet = 
-  let x = T 1 :: T '[s,784] Int
-      w = T 1 :: T '[784,10] Int
-      b = T 1 :: T '[10] Int
-      z = TRep b :: T '[s,10] Int
-      y' = (x %* w) .+ z :: T '[s,10] Int
-      y = TFunc "softmax" y' :: T '[s,10] Int
-  in y
 
-type IMAGE_SIZE = 32
-type IMAGE_SIZE_2 = 16
-type IMAGE_SIZE_4 = 8
-type BATCH_SIZE = 100
+class FromTensor a where
+  fromTensor :: T n a -> a
 
---images :: T' [s,IMAGE_SIZE,IMAGE_SIZE,3]
+data PyString = PyString String
+  deriving Show
 
-testConvNet0 :: forall s. T '[s,IMAGE_SIZE,IMAGE_SIZE,3] Int -> T '[s,IMAGE_SIZE_2,IMAGE_SIZE_2,64] Int
-testConvNet0 x1 = 
-  let k1 = T 1 :: T '[5,5,3,64] Int
-      b1 = T 1 :: T '[64] Int
-      y1' = (TConv2d x1 k1) :: T '[s,IMAGE_SIZE,IMAGE_SIZE,64] Int
-      y1 = TReLu y1' :: T '[s,IMAGE_SIZE,IMAGE_SIZE,64] Int
-      opt = sing :: Sing '[1,2,2,1]
-      y2 = TMaxPool opt y1 :: T '[s,IMAGE_SIZE_2,IMAGE_SIZE_2,64] Int
-      y3 = TNorm y2 :: T '[s,IMAGE_SIZE_2,IMAGE_SIZE_2,64] Int
-  in y3
+instance Monoid PyString where
+  mempty = ""
+  mappend (PyString a) (PyString b) =  PyString $ a <> b
 
-testConvNet1 :: forall s. T '[s,IMAGE_SIZE_2,IMAGE_SIZE_2,64] Int -> T '[s,IMAGE_SIZE_4,IMAGE_SIZE_4,64] Int
-testConvNet1 x1 = 
-  let k1 = T 1 :: T '[5,5,64,64] Int
-      b1 = T 1 :: T '[64] Int
-      y1' = (TConv2d x1 k1) :: T '[s,IMAGE_SIZE_2,IMAGE_SIZE_2,64] Int
-      y1 = TNorm (TReLu y1') :: T '[s,IMAGE_SIZE_2,IMAGE_SIZE_2,64] Int
-      opt = sing :: Sing '[1,2,2,1]
-      y2 = TMaxPool opt y1 :: T '[s,IMAGE_SIZE_4,IMAGE_SIZE_4,64] Int
-  in y2
+instance IsString PyString where
+  fromString a = PyString a
 
-testConvNet2 :: forall s. T '[s,IMAGE_SIZE_4,IMAGE_SIZE_4,64] Int -> T '[s,384] Int
-testConvNet2 x' = 
-  let x = TReshape x' :: T '[s,IMAGE_SIZE_4*IMAGE_SIZE_4*64] Int
-      w = T 1 :: T '[IMAGE_SIZE_4*IMAGE_SIZE_4*64,384] Int
-      b = T 1 :: T '[384] Int
-      z = TRep b :: T '[s,384] Int
-      y' = (x %* w) .+ z :: T '[s,384] Int
-      y = TReLu y' :: T '[s,384] Int
-  in y
-
-testConvNet3 :: forall s. T '[s,384] Int -> T '[s,192] Int
-testConvNet3 x = 
-  let w = T 1 :: T '[384,192] Int
-      b = T 1 :: T '[192] Int
-      z = TRep b :: T '[s,192] Int
-      y' = (x %* w) .+ z :: T '[s,192] Int
-      y = TReLu y' :: T '[s,192] Int
-  in y
-
-testConvNet4 :: forall s. T '[s,192] Int -> T '[s,10] Int
-testConvNet4 x = 
-  let w = T 1 :: T '[192,10] Int
-      b = T 1 :: T '[10] Int
-      z = TRep b :: T '[s,10] Int
-      y = (x %* w) .+ z :: T '[s,10] Int
-  in y
-
-testConvNet :: T '[BATCH_SIZE,IMAGE_SIZE,IMAGE_SIZE,3] Int -> T '[BATCH_SIZE,10] Int
-testConvNet = testConvNet4.testConvNet3.testConvNet2.testConvNet1.testConvNet0
-
-test = print 123
+instance FromTensor PyString where
+  fromTensor (T a)  = a
+  fromTensor (TAdd a b)  = "tf.add( " <> fromTensor a <> ", " <> fromTensor b <> " )"
+  fromTensor (TSub a b)  = "tf.add( " <> fromTensor a <> ", tf.negative( " <> fromTensor b <> " ) )"
+  fromTensor (TMul a b)  = "tf.multiply( " <> fromTensor a <> ", " <> fromTensor b <> " )"
+  fromTensor (TRep a)  = fromTensor a
+  fromTensor (TTr a)  = "tf.transpose( " <> fromTensor a <> " )"
+  fromTensor (TLabel a b)  = fromString a <> " = " <> fromTensor b <> "\n"
+  fromTensor (TMatMul a b)  = "tf.nn.matmul( " <> fromTensor a <> ", " <> fromTensor b <> " )"
+  fromTensor (TReshape a)  = "tf.reshape( " <> fromTensor a <> ", " <> fromString (show (dim a)) <> " )"
+  fromTensor (TConv2d a b)  = "tf.nn.conv2d( " <>
+                              fromTensor b <>
+                              ", " <>
+                              fromTensor a <>
+                              ", " <>
+                              fromString (show $ map (const 1) (dim a) ) <>
+                              ", padding='SAME' )"
+  fromTensor (TMaxPool a b)  = "tf.nn.max_pool( " <>
+                               fromTensor b <>
+                               ", ksize=" <>
+                               fromString (show $ dim' a) <>
+                               ", strides=" <>
+                               fromString (show $ map (const 1) (dim' a) ) <>
+                               ", padding='SAME' )"
+  fromTensor (TSoftMax a)  = "tf.nn.softmax( " <> fromTensor a <> " )"
+  fromTensor (TReLu a)  = "tf.nn.relu( " <> fromTensor a <> " )"
+  fromTensor (TNorm a)  = "tf.nn.lrn( " <> fromTensor a <> " )"
+  fromTensor (TSubSamp a b) = undefined
+  fromTensor (TFunc a b) = fromString a <> "( " <> fromTensor b <> " )"
+--  fromTensor _ = "hoge"
