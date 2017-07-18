@@ -24,9 +24,9 @@ import MathFlow
 
 testSingleNet :: T '[100,10] PyString
 testSingleNet = 
-  let x = T "x" :: T '[100,784] PyString
-      w = T "w" :: T '[784,10] PyString
-      b = T "b" :: T '[10] PyString
+  let x = TLabel "x" (T "x") :: T '[100,784] PyString
+      w = TLabel "w" (T "w") :: T '[784,10] PyString
+      b = TLabel "b" (T "b") :: T '[10] PyString
       z = TRep b :: T '[100,10] PyString
       y' = (x %* w) .+ z :: T '[100,10] PyString
       y = TFunc "softmax" y' :: T '[100,10] PyString
@@ -41,13 +41,13 @@ type BATCH_SIZE = 100
 
 testConvNet0 :: forall s. T '[s,IMAGE_SIZE,IMAGE_SIZE,3] Int -> T '[s,IMAGE_SIZE_2,IMAGE_SIZE_2,64] Int
 testConvNet0 x1 = 
-  let k1 = T 1 :: T '[5,5,3,64] Int
-      b1 = T 1 :: T '[64] Int
+  let k1 = TLabel "k1" (T 1) :: T '[5,5,3,64] Int
+      b1 = TLabel "b1" (T 1) :: T '[64] Int
       y1' = (TConv2d x1 k1) :: T '[s,IMAGE_SIZE,IMAGE_SIZE,64] Int
       y1 = TReLu y1' :: T '[s,IMAGE_SIZE,IMAGE_SIZE,64] Int
       opt = sing :: Sing '[1,2,2,1]
       y2 = TMaxPool opt y1 :: T '[s,IMAGE_SIZE_2,IMAGE_SIZE_2,64] Int
-      y3 = TNorm y2 :: T '[s,IMAGE_SIZE_2,IMAGE_SIZE_2,64] Int
+      y3 = TLabel "y1" (TNorm y2) :: T '[s,IMAGE_SIZE_2,IMAGE_SIZE_2,64] Int
   in y3
 
 testConvNet1 :: forall s. T '[s,IMAGE_SIZE_2,IMAGE_SIZE_2,64] Int -> T '[s,IMAGE_SIZE_4,IMAGE_SIZE_4,64] Int
@@ -93,3 +93,4 @@ testConvNet = testConvNet4.testConvNet3.testConvNet2.testConvNet1.testConvNet0
 main :: IO ()
 main = do
   print $ fromTensor testSingleNet
+--  print $ fromTensor (testConvNet (T 1))

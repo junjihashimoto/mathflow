@@ -101,15 +101,19 @@ dim' t = fromSing t
 class FromTensor a where
   fromTensor :: T n a -> a
 
-data PyString = PyString String
+data PyString =
+  PyString {
+     variables :: [String]
+  ,  expression :: String
+  }
   deriving Show
 
 instance Monoid PyString where
   mempty = ""
-  mappend (PyString a) (PyString b) =  PyString $ a <> b
+  mappend (PyString av ae) (PyString bv be) =  PyString (av <> bv) (ae <> be)
 
 instance IsString PyString where
-  fromString a = PyString a
+  fromString a = PyString [] a
 
 instance FromTensor PyString where
   fromTensor (T a)  = a
@@ -118,7 +122,9 @@ instance FromTensor PyString where
   fromTensor (TMul a b)  = "tf.multiply( " <> fromTensor a <> ", " <> fromTensor b <> " )"
   fromTensor (TRep a)  = fromTensor a
   fromTensor (TTr a)  = "tf.transpose( " <> fromTensor a <> " )"
-  fromTensor (TLabel a b)  = fromString a <> " = " <> fromTensor b <> "\n"
+  fromTensor (TLabel str a)  = PyString (v ++ [str <> " = " <> e]) str
+    where
+      (PyString v e) = fromTensor a
   fromTensor (TMatMul a b)  = "tf.nn.matmul( " <> fromTensor a <> ", " <> fromTensor b <> " )"
   fromTensor (TReshape a)  = "tf.reshape( " <> fromTensor a <> ", " <> fromString (show (dim a)) <> " )"
   fromTensor (TConv2d a b)  = "tf.nn.conv2d( " <>
