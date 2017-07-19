@@ -23,6 +23,7 @@ import Data.Singletons.TypeLits
 import Data.Singletons.TH
 import Data.Promotion.Prelude
 import Data.String
+import qualified Data.List as L
 import Data.Monoid (Monoid,(<>))
 
 type family IsZero (n :: Nat) :: Bool where
@@ -48,58 +49,60 @@ type family IsSameProduct (m :: [Nat]) (n :: [Nat]) :: Bool where
   IsSameProduct mx nx = Product mx :== Product nx
 
 
-data T (n::[Nat]) a =
+data Tensor (n::[Nat]) a =
     T a
-  | TAdd (T n a) (T n a)
-  | TSub (T n a) (T n a)
-  | TMul (T n a) (T n a)
-  | TRep (T (Tail n) a)
-  | TTr (T (Reverse n) a)
-  | forall o m. (IsMatMul m o n ~ True) => TMatMul (T m a) (T o a)
-  | forall m. (IsSameProduct m n ~ True) =>  TReshape (T m a)
+  | TAdd (Tensor n a) (Tensor n a)
+  | TSub (Tensor n a) (Tensor n a)
+  | TMul (Tensor n a) (Tensor n a)
+  | TRep (Tensor (Tail n) a)
+  | TTr (Tensor (Reverse n) a)
+  | forall o m. (SingI o,SingI m,IsMatMul m o n ~ True) => TMatMul (Tensor m a) (Tensor o a)
+  | forall m. (SingI m,IsSameProduct m n ~ True) => TReshape (Tensor m a)
   | forall o m.
-    (Last n ~ Last o,
+    (SingI o,SingI m,
+     Last n ~ Last o,
      Last m ~ Head (Tail (Reverse o)),
      (Tail (Reverse n)) ~ (Tail (Reverse m))
     ) =>
-    TConv2d (T m a) (T o a)
-  | forall f m. (IsSubSamp f m n ~ True) => TMaxPool (Sing f) (T m a)
-  | TSoftMax (T n a)
-  | TReLu (T n a)
-  | TNorm (T n a)
-  | forall f m. (IsSubSamp f m n ~ True) => TSubSamp (Sing f) (T m a)
-  | TFunc String (T n a)
-  | TLabel String (T n a)
+    TConv2d (Tensor m a) (Tensor o a)
+  | forall f m. (SingI f, SingI m,IsSubSamp f m n ~ True) => TMaxPool (Sing f) (Tensor m a)
+  | TSoftMax (Tensor n a)
+  | TReLu (Tensor n a)
+  | TNorm (Tensor n a)
+  | forall f m. (SingI f,SingI m,IsSubSamp f m n ~ True) => TSubSamp (Sing f) (Tensor m a)
+  | TFunc String (Tensor n a)
+  | TLabel String (Tensor n a)
 
-dim :: T n a -> [Integer]
-dim t = fromSing $ ty t
+dim :: (SingI n) => Tensor n a -> [Integer]
+dim t = dim' $ ty t
   where
-    ty :: T n a -> Sing n
-    ty _ = undefined
+    ty :: (SingI n) => Tensor n a -> Sing n
+    ty _ = sing
 
 dim' :: Sing (n::[Nat]) -> [Integer]
 dim' t = fromSing t
 
 
-(.+) :: T n a -> T n a -> T n a 
+(.+) :: Tensor n a -> Tensor n a -> Tensor n a 
 (.+) = TAdd
 
-(.-) :: T n a -> T n a -> T n a 
+(.-) :: Tensor n a -> Tensor n a -> Tensor n a 
 (.-) = TSub
 
-(.*) :: T n a -> T n a -> T n a 
+(.*) :: Tensor n a -> Tensor n a -> Tensor n a 
 (.*) = TMul
 
-(%*) :: forall o m n a. (IsMatMul m o n ~ True)
-     => T m a -> T o a -> T n a
+(%*) :: forall o m n a. (SingI o,SingI m,SingI n,IsMatMul m o n ~ True)
+     => Tensor m a -> Tensor o a -> Tensor n a
 (%*) a b = TMatMul a b
 
-(<==) :: String -> T n a  -> T n a 
-(<==) = TLabel
+(<--) :: String -> Tensor n a  -> Tensor n a 
+(<--) = TLabel
 
 
 class FromTensor a where
-  fromTensor :: T n a -> a
+  fromTensor :: Tensor n a -> a
+  toString :: Tensor n a -> String
 
 data PyString =
   PyString {
@@ -114,6 +117,7 @@ instance Monoid PyString where
 
 instance IsString PyString where
   fromString a = PyString [] a
+    
 
 instance FromTensor PyString where
   fromTensor (T a)  = a
@@ -122,7 +126,7 @@ instance FromTensor PyString where
   fromTensor (TMul a b)  = "tf.multiply( " <> fromTensor a <> ", " <> fromTensor b <> " )"
   fromTensor (TRep a)  = fromTensor a
   fromTensor (TTr a)  = "tf.transpose( " <> fromTensor a <> " )"
-  fromTensor (TLabel str a)  = PyString (v ++ [str <> " = " <> e]) str
+  fromTensor (TLabel str a)  = PyString ((str <> " = " <> e):v) str
     where
       (PyString v e) = fromTensor a
   fromTensor (TMatMul a b)  = "tf.nn.matmul( " <> fromTensor a <> ", " <> fromTensor b <> " )"
@@ -146,4 +150,6 @@ instance FromTensor PyString where
   fromTensor (TNorm a)  = "tf.nn.lrn( " <> fromTensor a <> " )"
   fromTensor (TSubSamp a b) = undefined
   fromTensor (TFunc a b) = fromString a <> "( " <> fromTensor b <> " )"
---  fromTensor _ = "hoge"
+  toString a = L.intercalate "\n" $ reverse e ++ [v]
+    where
+      (PyString e v) = fromTensor a

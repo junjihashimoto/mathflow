@@ -22,14 +22,14 @@ import Data.Singletons.TH
 import Data.Promotion.Prelude
 import MathFlow
 
-testSingleNet :: T '[100,10] PyString
+testSingleNet :: Tensor '[100,10] PyString
 testSingleNet = 
-  let x = TLabel "x" (T "x") :: T '[100,784] PyString
-      w = TLabel "w" (T "w") :: T '[784,10] PyString
-      b = TLabel "b" (T "b") :: T '[10] PyString
-      z = TRep b :: T '[100,10] PyString
-      y' = (x %* w) .+ z :: T '[100,10] PyString
-      y = TFunc "softmax" y' :: T '[100,10] PyString
+  let x = "x" <-- (T "x") :: Tensor '[100,784] PyString
+      w = "w" <-- (T "w") :: Tensor '[784,10] PyString
+      b = "b" <-- (T "b") :: Tensor '[10] PyString
+      z = "z" <-- TRep b :: Tensor '[100,10] PyString
+      y' = (x %* w) .+ z :: Tensor '[100,10] PyString
+      y = "y" <-- TFunc "softmax" y' :: Tensor '[100,10] PyString
   in y
 
 type IMAGE_SIZE = 32
@@ -39,58 +39,65 @@ type BATCH_SIZE = 100
 
 --images :: T' [s,IMAGE_SIZE,IMAGE_SIZE,3]
 
-testConvNet0 :: forall s. T '[s,IMAGE_SIZE,IMAGE_SIZE,3] Int -> T '[s,IMAGE_SIZE_2,IMAGE_SIZE_2,64] Int
+testConvNet0 :: forall s. (SingI s) => Tensor '[s,IMAGE_SIZE,IMAGE_SIZE,3] PyString -> Tensor '[s,IMAGE_SIZE_2,IMAGE_SIZE_2,64] PyString
 testConvNet0 x1 = 
-  let k1 = TLabel "k1" (T 1) :: T '[5,5,3,64] Int
-      b1 = TLabel "b1" (T 1) :: T '[64] Int
-      y1' = (TConv2d x1 k1) :: T '[s,IMAGE_SIZE,IMAGE_SIZE,64] Int
-      y1 = TReLu y1' :: T '[s,IMAGE_SIZE,IMAGE_SIZE,64] Int
+  let k1 = TLabel "k1" (T "") :: Tensor '[5,5,3,64] PyString
+      b1 = TLabel "b1" (T "") :: Tensor '[64] PyString
+      y1' = (TConv2d x1 k1) :: Tensor '[s,IMAGE_SIZE,IMAGE_SIZE,64] PyString
+      y1 = TReLu y1' :: Tensor '[s,IMAGE_SIZE,IMAGE_SIZE,64] PyString
       opt = sing :: Sing '[1,2,2,1]
-      y2 = TMaxPool opt y1 :: T '[s,IMAGE_SIZE_2,IMAGE_SIZE_2,64] Int
-      y3 = TLabel "y1" (TNorm y2) :: T '[s,IMAGE_SIZE_2,IMAGE_SIZE_2,64] Int
+      y2 = TMaxPool opt y1 :: Tensor '[s,IMAGE_SIZE_2,IMAGE_SIZE_2,64] PyString
+      y3 = TLabel "y1" (TNorm y2) :: Tensor '[s,IMAGE_SIZE_2,IMAGE_SIZE_2,64] PyString
   in y3
 
-testConvNet1 :: forall s. T '[s,IMAGE_SIZE_2,IMAGE_SIZE_2,64] Int -> T '[s,IMAGE_SIZE_4,IMAGE_SIZE_4,64] Int
+testConvNet1 :: forall s. (SingI s) => Tensor '[s,IMAGE_SIZE_2,IMAGE_SIZE_2,64] PyString -> Tensor '[s,IMAGE_SIZE_4,IMAGE_SIZE_4,64] PyString
 testConvNet1 x1 = 
-  let k1 = T 1 :: T '[5,5,64,64] Int
-      b1 = T 1 :: T '[64] Int
-      y1' = (TConv2d x1 k1) :: T '[s,IMAGE_SIZE_2,IMAGE_SIZE_2,64] Int
-      y1 = TNorm (TReLu y1') :: T '[s,IMAGE_SIZE_2,IMAGE_SIZE_2,64] Int
+  let k1 = T "" :: Tensor '[5,5,64,64] PyString
+      b1 = T "" :: Tensor '[64] PyString
+      y1' = (TConv2d x1 k1) :: Tensor '[s,IMAGE_SIZE_2,IMAGE_SIZE_2,64] PyString
+      y1 = TNorm (TReLu y1') :: Tensor '[s,IMAGE_SIZE_2,IMAGE_SIZE_2,64] PyString
       opt = sing :: Sing '[1,2,2,1]
-      y2 = TMaxPool opt y1 :: T '[s,IMAGE_SIZE_4,IMAGE_SIZE_4,64] Int
+      y2 = TMaxPool opt y1 :: Tensor '[s,IMAGE_SIZE_4,IMAGE_SIZE_4,64] PyString
   in y2
 
-testConvNet2 :: forall s. T '[s,IMAGE_SIZE_4,IMAGE_SIZE_4,64] Int -> T '[s,384] Int
+testConvNet2 :: forall s. (SingI s) => Tensor '[s,IMAGE_SIZE_4,IMAGE_SIZE_4,64] PyString -> Tensor '[s,384] PyString
 testConvNet2 x' = 
-  let x = TReshape x' :: T '[s,IMAGE_SIZE_4*IMAGE_SIZE_4*64] Int
-      w = T 1 :: T '[IMAGE_SIZE_4*IMAGE_SIZE_4*64,384] Int
-      b = T 1 :: T '[384] Int
-      z = TRep b :: T '[s,384] Int
-      y' = (x %* w) .+ z :: T '[s,384] Int
-      y = TReLu y' :: T '[s,384] Int
+  let x = TReshape x' :: Tensor '[s,IMAGE_SIZE_4*IMAGE_SIZE_4*64] PyString
+      w = T "" :: Tensor '[IMAGE_SIZE_4*IMAGE_SIZE_4*64,384] PyString
+      b = T "" :: Tensor '[384] PyString
+      z = TRep b :: Tensor '[s,384] PyString
+      y' = (x %* w) .+ z :: Tensor '[s,384] PyString
+      y = TReLu y' :: Tensor '[s,384] PyString
   in y
 
-testConvNet3 :: forall s. T '[s,384] Int -> T '[s,192] Int
+testConvNet3 :: forall s. (SingI s) => Tensor '[s,384] PyString -> Tensor '[s,192] PyString
 testConvNet3 x = 
-  let w = T 1 :: T '[384,192] Int
-      b = T 1 :: T '[192] Int
-      z = TRep b :: T '[s,192] Int
-      y' = (x %* w) .+ z :: T '[s,192] Int
-      y = TReLu y' :: T '[s,192] Int
+  let w = T "" :: Tensor '[384,192] PyString
+      b = T "" :: Tensor '[192] PyString
+      z = TRep b :: Tensor '[s,192] PyString
+      y' = (x %* w) .+ z :: Tensor '[s,192] PyString
+      y = TReLu y' :: Tensor '[s,192] PyString
   in y
 
-testConvNet4 :: forall s. T '[s,192] Int -> T '[s,10] Int
+testConvNet4 :: forall s. (SingI s) => Tensor '[s,192] PyString -> Tensor '[s,10] PyString
 testConvNet4 x = 
-  let w = T 1 :: T '[192,10] Int
-      b = T 1 :: T '[10] Int
-      z = TRep b :: T '[s,10] Int
-      y = (x %* w) .+ z :: T '[s,10] Int
+  let w = T "" :: Tensor '[192,10] PyString
+      b = T "" :: Tensor '[10] PyString
+      z = TRep b :: Tensor '[s,10] PyString
+      y = (x %* w) .+ z :: Tensor '[s,10] PyString
   in y
 
-testConvNet :: T '[BATCH_SIZE,IMAGE_SIZE,IMAGE_SIZE,3] Int -> T '[BATCH_SIZE,10] Int
+testImage :: Tensor '[BATCH_SIZE,IMAGE_SIZE,IMAGE_SIZE,3] PyString
+testImage = T ""
+
+testConvNet :: Tensor '[BATCH_SIZE,IMAGE_SIZE,IMAGE_SIZE,3] PyString -> Tensor '[BATCH_SIZE,10] PyString
 testConvNet = testConvNet4.testConvNet3.testConvNet2.testConvNet1.testConvNet0
 
 main :: IO ()
 main = do
+  print $ dim $ (T "" :: Tensor '[192,10] PyString)
   print $ fromTensor testSingleNet
---  print $ fromTensor (testConvNet (T 1))
+  putStrLn $ toString testSingleNet
+  print $ fromTensor (testConvNet testImage)
+  putStrLn $ toString (testConvNet testImage)
+--  print $ fromTensor (testConvNet (T ""))
