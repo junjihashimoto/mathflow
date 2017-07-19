@@ -20,6 +20,8 @@ source-repository head
 library
   hs-source-dirs:      src
   exposed-modules:     MathFlow
+                     , MathFlow.Core
+                     , MathFlow.PyString
   build-depends:       base >= 4.7 && < 5
                      , singletons
 --                     , tensorflow
