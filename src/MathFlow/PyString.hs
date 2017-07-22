@@ -33,7 +33,7 @@ data PyString =
      variables :: [String]
   ,  expression :: String
   }
-  deriving Show
+  deriving (Show,Eq,Read)
 
 instance Monoid PyString where
   mempty = ""

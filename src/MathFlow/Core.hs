@@ -78,6 +78,11 @@ data Tensor (n::[Nat]) a =
   | TFunc String (Tensor n a)
   | TLabel String (Tensor n a)
 
+
+-- | get dimension from tensor
+-- 
+-- >>> dim (T 1 :: Tensor '[192,10] Int)
+-- [192,10]
 dim :: (SingI n) => Tensor n a -> [Integer]
 dim t = dim' $ ty t
   where

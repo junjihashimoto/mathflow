@@ -12,6 +12,10 @@ before_install:
 - mkdir -p ~/.local/bin
 - export PATH=$HOME/.local/bin:$PATH
 - travis_retry curl -sSL https://get.haskellstack.org/ | sh
+- apt install python3
+- pip3 install tensorflow
+- pip3 install -U pip
+
 
 script:
 - stack --no-terminal --install-ghc test
