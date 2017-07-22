@@ -37,6 +37,7 @@ test-suite mathflow-test
   main-is:             Spec.hs
   other-modules:       MathFlow.CoreSpec
                      , MathFlow.PyStringSpec
+                     , MathFlow.PythonSpec
   build-depends:       base
                      , mathflow
                      , singletons
