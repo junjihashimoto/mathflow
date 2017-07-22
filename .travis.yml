@@ -12,7 +12,7 @@ before_install:
 - mkdir -p ~/.local/bin
 - export PATH=$HOME/.local/bin:$PATH
 - travis_retry curl -sSL https://get.haskellstack.org/ | sh
-- sudo apt install python3 pip3
+- sudo apt install python3 python3-pip
 - sudo pip3 install -U pip
 - sudo pip3 install tensorflow
 
