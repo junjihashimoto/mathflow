@@ -14,6 +14,7 @@
 {-# LANGUAGE TypeInType #-}
 
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE CPP #-}
 
 module MathFlow.PythonSpec where
 
@@ -43,8 +44,13 @@ src = [lbt|
           |print(result)
           |]
 
+#ifdef USE_PYTHON
 spec = do
   describe "run tensorflow" $ with localhost $ do
     it "command test" $ do
       command "python3" [] (T.unpack src) @>=  exit 0 <> stdout "6\n"
+#else
+spec :: Spec
+spec = return ()
+#endif
 

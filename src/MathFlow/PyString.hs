@@ -16,12 +16,6 @@
 
 module MathFlow.PyString where
 
-import GHC.TypeLits
-import Data.Proxy
-import Data.Singletons
-import Data.Singletons.TypeLits
-import Data.Singletons.TH
-import Data.Promotion.Prelude
 import Data.String
 import qualified Data.List as L
 import Data.Monoid (Monoid,(<>))
@@ -42,9 +36,9 @@ instance Monoid PyString where
 instance IsString PyString where
   fromString a = PyString [] a
     
-
 instance FromTensor PyString where
   fromTensor (T a)  = a
+  fromTensor (TConcat a b)  = "tf.concat( " <> fromTensor a <> ", " <> fromTensor b <> " )"
   fromTensor (TAdd a b)  = "tf.add( " <> fromTensor a <> ", " <> fromTensor b <> " )"
   fromTensor (TSub a b)  = "tf.add( " <> fromTensor a <> ", tf.negative( " <> fromTensor b <> " ) )"
   fromTensor (TMul a b)  = "tf.multiply( " <> fromTensor a <> ", " <> fromTensor b <> " )"
@@ -60,14 +54,14 @@ instance FromTensor PyString where
                               ", " <>
                               fromTensor a <>
                               ", " <>
-                              fromString (show $ map (const 1) (dim a) ) <>
+                              fromString (show $ map (const (1::Integer)) (dim a) ) <>
                               ", padding='SAME' )"
   fromTensor (TMaxPool a b)  = "tf.nn.max_pool( " <>
                                fromTensor b <>
                                ", ksize=" <>
                                fromString (show $ dim' a) <>
                                ", strides=" <>
-                               fromString (show $ map (const 1) (dim' a) ) <>
+                               fromString (show $ map (const (1::Integer)) (dim' a) ) <>
                                ", padding='SAME' )"
   fromTensor (TSoftMax a)  = "tf.nn.softmax( " <> fromTensor a <> " )"
   fromTensor (TReLu a)  = "tf.nn.relu( " <> fromTensor a <> " )"
