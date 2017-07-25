@@ -37,7 +37,7 @@ instance IsString PyString where
   fromString a = PyString [] a
     
 instance FromTensor PyString where
-  fromTensor (T a)  = a
+  fromTensor (Tensor a)  = a
   fromTensor (TConcat a b)  = "tf.concat( " <> fromTensor a <> ", " <> fromTensor b <> " )"
   fromTensor (TAdd a b)  = "tf.add( " <> fromTensor a <> ", " <> fromTensor b <> " )"
   fromTensor (TSub a b)  = "tf.add( " <> fromTensor a <> ", tf.negative( " <> fromTensor b <> " ) )"

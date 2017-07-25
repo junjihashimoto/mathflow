@@ -14,6 +14,7 @@
 
 {-# LANGUAGE OverloadedStrings #-}
 
+
 module MathFlow.Core where
 
 import GHC.TypeLits
@@ -45,7 +46,7 @@ type family IsSameProduct (m :: [Nat]) (n :: [Nat]) :: Bool where
 
 
 data Tensor (n::[Nat]) a =
-    T a
+    Tensor a
   | TAdd (Tensor n a) (Tensor n a)
   | TSub (Tensor n a) (Tensor n a)
   | TMul (Tensor n a) (Tensor n a)
@@ -72,7 +73,7 @@ data Tensor (n::[Nat]) a =
 
 -- | get dimension from tensor
 -- 
--- >>> dim (T 1 :: Tensor '[192,10] Int)
+-- >>> dim (Tensor 1 :: Tensor '[192,10] Int)
 -- [192,10]
 dim :: (SingI n) => Tensor n a -> [Integer]
 dim t = dim' $ ty t
@@ -83,6 +84,8 @@ dim t = dim' $ ty t
 dim' :: Sing (n::[Nat]) -> [Integer]
 dim' t = fromSing t
 
+toValue :: forall n a. Sing (n::[Nat]) -> a -> Tensor n a
+toValue _ a = Tensor a
 
 (.+) :: Tensor n a -> Tensor n a -> Tensor n a 
 (.+) = TAdd
