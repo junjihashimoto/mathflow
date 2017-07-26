@@ -20,6 +20,8 @@ import Data.String
 import qualified Data.List as L
 import Data.Monoid (Monoid,(<>))
 import MathFlow.Core
+import System.Exit
+import System.Process
 
 
 data PyString =
@@ -71,3 +73,33 @@ instance FromTensor PyString where
   toString a = L.intercalate "\n" $ reverse e ++ [v]
     where
       (PyString e v) = fromTensor a
+
+
+toRunnableString :: PyString -> String
+toRunnableString (PyString env' value) = code
+  where
+     code = concat [
+         "import tensorflow as tf\n",
+         (L.intercalate "\n" $ reverse env' ++ [concat ["__value__ = ", value]]) ,
+         "\n",
+         "sess = tf.Session()\n",
+         "result = sess.run(__value__)\n",
+         "print(result)\n"
+         ]
+
+runPyString :: PyString -> IO (Int,String,String)
+runPyString (PyString env' value) = do
+  (e,stdout,stderr) <- readProcessWithExitCode "python3" [] code
+  return  (exitCode e,stdout,stderr)
+  where
+     exitCode code = case code of
+       ExitSuccess -> 0
+       ExitFailure v -> v
+     code = concat [
+         "import tensorflow as tf\n",
+         (L.intercalate "\n" $ reverse env' ++ [concat ["__value__ = ", value]]) ,
+         "\n",
+         "sess = tf.Session()\n",
+         "result = sess.run(__value__)\n",
+         "print(result)\n"
+         ]

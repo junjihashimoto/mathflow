@@ -44,11 +44,24 @@ src = [lbt|
           |print(result)
           |]
 
+
+testNet :: Tensor '[1] PyString
+testNet = 
+  let n1 = "n1" <-- (Tensor "tf.constant(1)") :: Tensor '[1] PyString
+      n2 = "n2" <-- (Tensor "tf.constant(2)") :: Tensor '[1] PyString
+      n3 = "n3" <-- (Tensor "tf.constant(3)") :: Tensor '[1] PyString
+      y = "y" <-- n1 .+ n2 .+ n3 :: Tensor '[1] PyString
+  in y
+  
 #ifdef USE_PYTHON
 spec = do
   describe "run tensorflow" $ with localhost $ do
     it "command test" $ do
       command "python3" [] (T.unpack src) @>=  exit 0 <> stdout "6\n"
+  describe "run pystring" $ with localhost $ do
+    it "command test" $ do
+      command "python3" [] (toRunnableString (fromTensor testNet)) @>=  exit 0 <> stdout "6\n"
+--      runPyString (fromTensor testNet) `shouldReturn` (0,"6\n","")
 #else
 spec :: Spec
 spec = return ()

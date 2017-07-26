@@ -22,12 +22,24 @@ import Data.Singletons
 import Data.Singletons.TH
 import Data.Promotion.Prelude
 
+-- |IsSubSamp // Subsampling constraint
+--
+-- * (f :: [Nat]) // strides for subsampling
+-- * (m :: [Nat]) // dimensions of original tensor 
+-- * (n :: [Nat]) // dimensions of subsampled tensor 
+-- * :: Bool
 type family IsSubSamp (f :: [Nat]) (m :: [Nat]) (n :: [Nat]) :: Bool where
   IsSubSamp (1:fs) (m:ms) (n:ns) = IsSubSamp fs ms ns
   IsSubSamp (f:fs) (m:ms) (n:ns) = ((n * f) :== m) :&& (IsSubSamp fs ms ns)
   IsSubSamp '[] '[] '[] = 'True
   IsSubSamp _ _ _ = 'False
 
+-- |IsMatMul // A constraint for matrix multiplication
+--
+-- * (m :: [Nat]) // dimensions of a[..., i, k] 
+-- * (o :: [Nat]) // dimensions of b[..., k, j]
+-- * (n :: [Nat]) // dimensions of output[..., i, j] = sum_k (a[..., i, k] * b[..., k, j]), for all indices i, j.
+-- * :: Bool
 type family IsMatMul (m :: [Nat]) (o :: [Nat]) (n :: [Nat]) :: Bool where
   IsMatMul m o n =
     Last n :== Last o :&&
@@ -35,18 +47,30 @@ type family IsMatMul (m :: [Nat]) (o :: [Nat]) (n :: [Nat]) :: Bool where
     (Tail (Reverse n)) :== (Tail (Reverse m)) :&&
     (Tail (Tail (Reverse n))) :== (Tail (Tail (Reverse o)))
 
+-- |IsConcat // A constraint for concatination of tensor 
+--
+-- * (m :: [Nat]) // dimensions of a[..., i, ...] 
+-- * (o :: [Nat]) // dimensions of b[..., k, ...]
+-- * (n :: [Nat]) // dimensions of output[..., i+k, ...] = concat (a,b) 
+-- * :: Bool
 type family IsConcat (m :: [Nat]) (o :: [Nat]) (n :: [Nat]) :: Bool where
   IsConcat (m:mx) (o:ox) (n:nx) = (m :== o :&& m:== n :|| m + o :== n) :&& IsConcat mx ox nx
   IsConcat '[] '[] '[] = 'True
   IsConcat _ _ _ = 'False
 
+-- |IsSameProduct // A constraint for reshaping tensor
+--
+-- * (m :: [Nat]) // dimensions of original tensor
+-- * (n :: [Nat]) // dimensions of reshaped tensor
+-- * :: Bool
 type family IsSameProduct (m :: [Nat]) (n :: [Nat]) :: Bool where
   IsSameProduct (m:mx) (n:nx) = m :== n :&& (Product mx :== Product nx)
   IsSameProduct mx nx = Product mx :== Product nx
 
 
+-- |Dependently typed tensor model
 data Tensor (n::[Nat]) a =
-    Tensor a
+    Tensor a -- ^ Transform a value to dependently typed value
   | TAdd (Tensor n a) (Tensor n a)
   | TSub (Tensor n a) (Tensor n a)
   | TMul (Tensor n a) (Tensor n a)
