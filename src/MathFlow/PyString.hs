@@ -49,7 +49,7 @@ instance FromTensor PyString where
   fromTensor (TLabel str a)  = PyString ((str <> " = " <> e):v) str
     where
       (PyString v e) = fromTensor a
-  fromTensor (TMatMul a b)  = "tf.nn.matmul( " <> fromTensor a <> ", " <> fromTensor b <> " )"
+  fromTensor (TMatMul a b)  = "tf.matmul( " <> fromTensor a <> ", " <> fromTensor b <> " )"
   fromTensor (TReshape a)  = "tf.reshape( " <> fromTensor a <> ", " <> fromString (show (dim a)) <> " )"
   fromTensor (TConv2d a b)  = "tf.nn.conv2d( " <>
                               fromTensor b <>

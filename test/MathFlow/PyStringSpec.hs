@@ -100,12 +100,12 @@ testConvNet = testConvNet4.testConvNet3.testConvNet2.testConvNet1.testConvNet0
 spec = do
   describe "model to value" $ do
     it "single layer net" $ do
-      fromTensor testSingleNet `shouldBe` PyString {variables = ["y = softmax( tf.add( tf.nn.matmul( x, w ), z ) )","x = x","w = w","z = b","b = b"], expression = "y"}
+      fromTensor testSingleNet `shouldBe` PyString {variables = ["y = softmax( tf.add( tf.matmul( x, w ), z ) )","x = x","w = w","z = b","b = b"], expression = "y"}
     it "multible layer net" $ do
-      fromTensor (testConvNet testImage) `shouldBe` PyString {variables = ["y1 = tf.nn.lrn( tf.nn.max_pool( tf.nn.relu( tf.nn.conv2d( k1, , [1,1,1,1], padding='SAME' ) ), ksize=[1,2,2,1], strides=[1,1,1,1], padding='SAME' ) )","k1 = "], expression = "tf.add( tf.nn.matmul( tf.nn.relu( tf.add( tf.nn.matmul( tf.nn.relu( tf.add( tf.nn.matmul( tf.reshape( tf.nn.max_pool( tf.nn.lrn( tf.nn.relu( tf.nn.conv2d( , y1, [1,1,1,1], padding='SAME' ) ) ), ksize=[1,2,2,1], strides=[1,1,1,1], padding='SAME' ), [100,8,8,64] ),  ),  ) ),  ),  ) ),  ),  )"}
+      fromTensor (testConvNet testImage) `shouldBe` PyString {variables = ["y1 = tf.nn.lrn( tf.nn.max_pool( tf.nn.relu( tf.nn.conv2d( k1, , [1,1,1,1], padding='SAME' ) ), ksize=[1,2,2,1], strides=[1,1,1,1], padding='SAME' ) )","k1 = "], expression = "tf.add( tf.matmul( tf.nn.relu( tf.add( tf.matmul( tf.nn.relu( tf.add( tf.matmul( tf.reshape( tf.nn.max_pool( tf.nn.lrn( tf.nn.relu( tf.nn.conv2d( , y1, [1,1,1,1], padding='SAME' ) ) ), ksize=[1,2,2,1], strides=[1,1,1,1], padding='SAME' ), [100,8,8,64] ),  ),  ) ),  ),  ) ),  ),  )"}
   describe "model to string" $ do
     it "single layer net" $ do
-      toString testSingleNet `shouldBe` "b = b\nz = b\nw = w\nx = x\ny = softmax( tf.add( tf.nn.matmul( x, w ), z ) )\ny"
+      toString testSingleNet `shouldBe` "b = b\nz = b\nw = w\nx = x\ny = softmax( tf.add( tf.matmul( x, w ), z ) )\ny"
     it "multible layer net" $ do
-      toString (testConvNet testImage) `shouldBe` "k1 = \ny1 = tf.nn.lrn( tf.nn.max_pool( tf.nn.relu( tf.nn.conv2d( k1, , [1,1,1,1], padding='SAME' ) ), ksize=[1,2,2,1], strides=[1,1,1,1], padding='SAME' ) )\ntf.add( tf.nn.matmul( tf.nn.relu( tf.add( tf.nn.matmul( tf.nn.relu( tf.add( tf.nn.matmul( tf.reshape( tf.nn.max_pool( tf.nn.lrn( tf.nn.relu( tf.nn.conv2d( , y1, [1,1,1,1], padding='SAME' ) ) ), ksize=[1,2,2,1], strides=[1,1,1,1], padding='SAME' ), [100,8,8,64] ),  ),  ) ),  ),  ) ),  ),  )"
+      toString (testConvNet testImage) `shouldBe` "k1 = \ny1 = tf.nn.lrn( tf.nn.max_pool( tf.nn.relu( tf.nn.conv2d( k1, , [1,1,1,1], padding='SAME' ) ), ksize=[1,2,2,1], strides=[1,1,1,1], padding='SAME' ) )\ntf.add( tf.matmul( tf.nn.relu( tf.add( tf.matmul( tf.nn.relu( tf.add( tf.matmul( tf.reshape( tf.nn.max_pool( tf.nn.lrn( tf.nn.relu( tf.nn.conv2d( , y1, [1,1,1,1], padding='SAME' ) ) ), ksize=[1,2,2,1], strides=[1,1,1,1], padding='SAME' ), [100,8,8,64] ),  ),  ) ),  ),  ) ),  ),  )"
 
