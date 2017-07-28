@@ -81,10 +81,18 @@ instance FromTensor PyString where
   fromTensor (TNorm a)  = "tf.nn.lrn( " <> fromTensor a <> " )"
   fromTensor (TSubSamp a b) = undefined
   fromTensor (TFunc a b) = fromString a <> "( " <> fromTensor b <> " )"
+
   toString a = L.intercalate "\n" $ reverse e ++ [v]
     where
       (PyString e v) = fromTensor a
 
+  run tensor = do
+    (e,stdout,stderr) <- readProcessWithExitCode "python3" [] $ toRunnableString $ fromTensor tensor
+    return  (exitCode e,stdout,stderr)
+    where
+       exitCode e = case e of
+         ExitSuccess -> 0
+         ExitFailure v -> v
 
 toRunnableString :: PyString -> String
 toRunnableString (PyString env' value) = code
@@ -98,22 +106,6 @@ toRunnableString (PyString env' value) = code
          "print(result)\n"
          ]
 
-runPyString :: PyString -> IO (Int,String,String)
-runPyString (PyString env' value) = do
-  (e,stdout,stderr) <- readProcessWithExitCode "python3" [] code
-  return  (exitCode e,stdout,stderr)
-  where
-     exitCode code = case code of
-       ExitSuccess -> 0
-       ExitFailure v -> v
-     code = concat [
-         "import tensorflow as tf\n",
-         (L.intercalate "\n" $ reverse env' ++ [concat ["__value__ = ", value]]) ,
-         "\n",
-         "sess = tf.Session()\n",
-         "result = sess.run(__value__)\n",
-         "print(result)\n"
-         ]
 
 -- | Get dimensions of list
 --

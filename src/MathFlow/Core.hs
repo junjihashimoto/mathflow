@@ -131,4 +131,5 @@ toValue _ a = Tensor a
 class FromTensor a where
   fromTensor :: Tensor n a -> a
   toString :: Tensor n a -> String
+  run :: Tensor n a -> IO (Int,String,String)
 
