@@ -13,6 +13,7 @@
 {-# LANGUAGE TypeInType #-}
 
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes #-}
 
 module MathFlow.PyStringSpec where
 
@@ -109,3 +110,12 @@ spec = do
     it "multible layer net" $ do
       toString (testConvNet testImage) `shouldBe` "k1 = \ny1 = tf.nn.lrn( tf.nn.max_pool( tf.nn.relu( tf.nn.conv2d( k1, , [1,1,1,1], padding='SAME' ) ), ksize=[1,2,2,1], strides=[1,1,1,1], padding='SAME' ) )\ntf.add( tf.matmul( tf.nn.relu( tf.add( tf.matmul( tf.nn.relu( tf.add( tf.matmul( tf.reshape( tf.nn.max_pool( tf.nn.lrn( tf.nn.relu( tf.nn.conv2d( , y1, [1,1,1,1], padding='SAME' ) ) ), ksize=[1,2,2,1], strides=[1,1,1,1], padding='SAME' ), [100,8,8,64] ),  ),  ) ),  ),  ) ),  ),  )"
 
+
+testBuild :: Tensor '[1] PyString
+testBuild = (Tensor "tf.constant([1])" :: Tensor '[1] PyString)
+
+testBuild2 :: Tensor '[1] PyString
+testBuild2 = $(pyConst [1::Integer])
+
+testBuild3 :: Tensor '[1,1,1] PyString
+testBuild3 = $(pyConst3 [[[1]]])

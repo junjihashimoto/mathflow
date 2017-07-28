@@ -13,8 +13,14 @@
 {-# LANGUAGE TypeInType #-}
 
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes #-}
 
 module MathFlow.PyString where
+
+import GHC.TypeLits
+import Data.Singletons
+import Data.Singletons.TH
+import Data.Promotion.Prelude
 
 import Data.String
 import qualified Data.List as L
@@ -23,6 +29,7 @@ import MathFlow.Core
 import System.Exit
 import System.Process
 
+import Language.Haskell.TH
 
 data PyString =
   PyString {
@@ -40,7 +47,11 @@ instance IsString PyString where
     
 instance FromTensor PyString where
   fromTensor (Tensor a)  = a
-  fromTensor (TConcat a b)  = "tf.concat( " <> fromTensor a <> ", " <> fromTensor b <> " )"
+  fromTensor v@(TConcat a b)  = wrap v
+    where
+      wrap :: SingI n => Tensor n a -> PyString
+      wrap t = "tf.concat( [" <> fromTensor a <> ", " <> fromTensor b <> " ]," <> fromString (show (idx (dim t))) <> " )"
+      idx i = fst $ head $ filter (\(i,b) -> b ) $ map (\(i,vd,ad) -> (i, vd /= ad)) $ zip3 [0..] i (dim a)
   fromTensor (TAdd a b)  = "tf.add( " <> fromTensor a <> ", " <> fromTensor b <> " )"
   fromTensor (TSub a b)  = "tf.add( " <> fromTensor a <> ", tf.negative( " <> fromTensor b <> " ) )"
   fromTensor (TMul a b)  = "tf.multiply( " <> fromTensor a <> ", " <> fromTensor b <> " )"
@@ -103,3 +114,53 @@ runPyString (PyString env' value) = do
          "result = sess.run(__value__)\n",
          "print(result)\n"
          ]
+
+-- | Get dimensions of list
+--
+-- >>> listDim [1]
+-- [1]
+-- >>> listDim [[1]]
+-- [1,1]
+-- >>> listDim [[1,2]]
+-- [1,2]
+-- >>> listDim [[1,2],[1,2]]
+-- [2,2]
+class ListDimension a where
+  listDim :: a -> [Integer]
+
+instance ListDimension Integer where
+  listDim _ = []
+
+instance ListDimension a => ListDimension [a] where
+  listDim [] = []
+  listDim a@(x:xs) = (fromIntegral (length a)) : listDim x
+
+genPyType :: [Integer] -> Type
+genPyType dims = (AppT (AppT (ConT ''Tensor) (loop dims)) (ConT ''PyString))
+  where
+    loop :: [Integer] -> Type
+    loop [] = PromotedNilT
+    loop (x:xs) = (AppT (AppT PromotedConsT (LitT (NumTyLit x))) (loop xs))
+
+genPyExp :: Show a => a -> Exp
+genPyExp values =  (AppE (ConE 'Tensor) (LitE (StringL ("tf.constant(" <> show values <> ")"))))
+
+-- | Gen tensorflow constant expression
+--
+--  $(pyConst1 [3]) means (Tensor "tf.constant([3])" :: Tensor '[1] PyString)
+--  $(pyConst1 [3,3]) means (Tensor "tf.constant([3,3])" :: Tensor '[2] PyString)
+--  $(pyConst2 [[3,3],[3,3]]) means (Tensor "tf.constant([[3,3],[3,3]])" :: Tensor '[2,2] PyString)
+pyConst1 :: [Integer] -> ExpQ
+pyConst1 = pyConst
+
+pyConst2 :: [[Integer]] -> ExpQ
+pyConst2 = pyConst
+
+pyConst3 :: [[[Integer]]] -> ExpQ
+pyConst3 = pyConst
+
+pyConst4 :: [[[[Integer]]]] -> ExpQ
+pyConst4 = pyConst
+
+pyConst :: (Show a,ListDimension a) => a -> ExpQ
+pyConst values = return (SigE (genPyExp values) (genPyType (listDim values)))

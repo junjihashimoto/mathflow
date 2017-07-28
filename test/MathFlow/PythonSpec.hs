@@ -54,11 +54,33 @@ testNet =
       y = "y" <-- (n1 .+ n2 .+ n3) :: Tensor '[1] PyString
   in y
 
+testSub :: Tensor '[1] PyString
+testSub = 
+  let n1 = "n1" <-- (Tensor "tf.constant(100)") :: Tensor '[1] PyString
+      n2 = "n2" <-- (Tensor "tf.constant(50)") :: Tensor '[1] PyString
+      n3 = "n3" <-- (Tensor "tf.constant(2)") :: Tensor '[1] PyString
+      y = "y" <-- (n3 .* (n1 .- n2))  :: Tensor '[1] PyString
+  in y
+
 testMatMul :: Tensor '[2,1] PyString
 testMatMul = 
-  let n1 = "n1" <-- (Tensor "tf.constant([[2],[3]])") :: Tensor '[2,1] PyString
-      n2 = "n2" <-- (Tensor "tf.constant([[1,0],[0,1]])") :: Tensor '[2,2] PyString
+  let n1 = "n1" <-- $(pyConst2 [[2],[3]]) :: Tensor '[2,1] PyString
+      n2 = "n2" <-- $(pyConst2 [[2,0],[0,1]]) :: Tensor '[2,2] PyString
       y = "y" <-- (n2 %* n1) :: Tensor '[2,1] PyString
+  in y
+
+testConcat :: Tensor '[2,2] PyString
+testConcat = 
+  let n1 = "n1" <-- (Tensor "tf.constant([[2],[3]])") :: Tensor '[2,1] PyString
+      n2 = "n2" <-- (Tensor "tf.constant([[2],[3]])") :: Tensor '[2,1] PyString
+      y = "y" <-- (TConcat n1 n2) :: Tensor '[2,2] PyString
+  in y
+
+testReplicate :: Tensor '[2,2] PyString
+testReplicate = 
+  let n1 = "n1" <-- (Tensor "tf.constant([[2],[3]])") :: Tensor '[2,1] PyString
+      n2 = "n2" <-- (Tensor "tf.constant([[2],[3]])") :: Tensor '[2,1] PyString
+      y = "y" <-- (TConcat n1 n2) :: Tensor '[2,2] PyString
   in y
 
 #ifdef USE_PYTHON
@@ -69,11 +91,16 @@ spec = do
   describe "run pystring" $ with localhost $ do
     it "adder" $ do
       command "python3" [] (toRunnableString (fromTensor testNet)) @>=  exit 0 <> stdout "6\n"
+    it "subtract" $ do
+      command "python3" [] (toRunnableString (fromTensor testSub)) @>=  exit 0 <> stdout "100\n"
     it "matmul" $ do
       let src = toRunnableString (fromTensor testMatMul)
+      command "python3" [] src @>=  exit 0 <> stdout "[[4]\n [3]]\n"
+    it "concat" $ do
+      let src = toRunnableString (fromTensor testConcat)
       liftIO $ putStr src
-      command "python3" [] src @>=  exit 0 <> stdout "[[2]\n [3]]\n"
---      runPyString (fromTensor testNet) `shouldReturn` (0,"6\n","")
+      command "python3" [] src @>=  exit 0 <> stdout "[[2 2]\n [3 3]]\n"
+
 #else
 spec :: Spec
 spec = return ()

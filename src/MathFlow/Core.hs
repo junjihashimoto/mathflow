@@ -76,8 +76,8 @@ data Tensor (n::[Nat]) a =
   | TMul (Tensor n a) (Tensor n a)
   | TRep (Tensor (Tail n) a)
   | TTr (Tensor (Reverse n) a)
-  | forall o m. (SingI o,SingI m,IsMatMul m o n ~ 'True) => TMatMul (Tensor m a) (Tensor o a)
-  | forall o m. (SingI o,SingI m,IsConcat m o n ~ 'True) => TConcat (Tensor m a) (Tensor o a)
+  | forall o m. (SingI o,SingI m,SingI n,IsMatMul m o n ~ 'True) => TMatMul (Tensor m a) (Tensor o a)
+  | forall o m. (SingI o,SingI m,SingI n,IsConcat m o n ~ 'True) => TConcat (Tensor m a) (Tensor o a)
   | forall m. (SingI m,IsSameProduct m n ~ 'True) => TReshape (Tensor m a)
   | forall o m.
     (SingI o,SingI m,
@@ -111,20 +111,20 @@ dim' t = fromSing t
 toValue :: forall n a. Sing (n::[Nat]) -> a -> Tensor n a
 toValue _ a = Tensor a
 
-(.+) :: Tensor n a -> Tensor n a -> Tensor n a 
+(.+) :: SingI n => Tensor n a -> Tensor n a -> Tensor n a 
 (.+) = TAdd
 
-(.-) :: Tensor n a -> Tensor n a -> Tensor n a 
+(.-) :: SingI n => Tensor n a -> Tensor n a -> Tensor n a 
 (.-) = TSub
 
-(.*) :: Tensor n a -> Tensor n a -> Tensor n a 
+(.*) :: SingI n => Tensor n a -> Tensor n a -> Tensor n a 
 (.*) = TMul
 
 (%*) :: forall o m n a. (SingI o,SingI m,SingI n,IsMatMul m o n ~ 'True)
      => Tensor m a -> Tensor o a -> Tensor n a
 (%*) a b = TMatMul a b
 
-(<--) :: String -> Tensor n a  -> Tensor n a 
+(<--) :: SingI n => String -> Tensor n a  -> Tensor n a 
 (<--) = TLabel
 
 
