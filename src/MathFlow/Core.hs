@@ -122,15 +122,6 @@ dim' t = fromSing t
 toValue :: forall n t a. Sing (n::[Nat]) -> a -> Tensor n t a
 toValue _ a = Tensor a
 
---(.+) :: SingI n => Tensor n t a -> Tensor n t a -> Tensor n t a 
---(.+) = TAdd
---
---(.-) :: SingI n => Tensor n t a -> Tensor n t a -> Tensor n t a 
---(.-) = TSub
---
---(.*) :: SingI n => Tensor n t a -> Tensor n t a -> Tensor n t a 
---(.*) = TMul
-
 (%*) :: forall o m n t a. (SingI o,SingI m,SingI n,IsMatMul m o n ~ 'True)
      => Tensor m t a -> Tensor o t a -> Tensor n t a
 (%*) a b = TMatMul a b
