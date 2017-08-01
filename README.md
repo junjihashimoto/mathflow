@@ -1,23 +1,28 @@
-# mathflow
+# mathflow(Dependently typed tensorflow modeler)
 
 [![Hackage version](https://img.shields.io/hackage/v/mathflow.svg?style=flat)](https://hackage.haskell.org/package/mathflow)  [![Build Status](https://travis-ci.org/junjihashimoto/mathflow.png?branch=master)](https://travis-ci.org/junjihashimoto/mathflow)
 
-Dependently typed tensorflow modeler
-
 This package provides a model of tensor-operations.
 
-The model's dimensions and the constraints are described by dependent types.
+The model is independent from tensorflow-binding of python and haskell, though this package generates python-code.
+
+tensor's dimensions and constraints are described by dependent types.
 
 The tensor-operations are based on tensorflow-api.
 
 Currently the model can be translated into python-code.
 
-To write this package, I refer to [this neural network document](https://blog.jle.im/entry/practical-dependent-types-in-haskell-1.html).
+To write this package, I refer to [this neural network document](https://blog.jle.im/entry/practical-dependent-types-in-haskell-1.html) and singletons.
 
 
 # Install
 
+Install tensorflow of python and this package.
+
 ```
+> sudo apt install python3 python3-pip
+> pip3 install -U pip
+> pip3 install tensorflow
 > git clone git@github.com:junjihashimoto/mathflow.git
 > cd mathflow
 > stack install
@@ -25,14 +30,30 @@ To write this package, I refer to [this neural network document](https://blog.jl
 
 # Usage
 
-```
-testMatMul :: Tensor '[2,1] PyString
-testMatMul = 
-  let n1 = "n1" <-- $(pyConst2 [[2],[3]]) :: Tensor '[2,1] PyString
-      n2 = "n2" <-- $(pyConst2 [[2,0],[0,1]]) :: Tensor '[2,2] PyString
-      y = "y" <-- (n2 %* n1) :: Tensor '[2,1] PyString
-  in y
+## About model
 
+Model has a type of ```Tensor (dimensions:[Nat]) value-type output-type```.
+
+* ```dimensions``` are tensor-dimensions.
+* ```value-type``` is a value type like Integer or Float of [tensorflow-data-types](https://www.tensorflow.org/programmers_guide/dims_types). 
+* ```output-type``` is a type of code which this package generates. PyString-type is used for generating python-code.
+
+## Create model and run it
+
+Write tensorflow-model.
+
+```
+testMatMul :: Tensor '[2,1] Int PyString
+testMatMul = 
+  let n1 = "n1" <-- $(pyConst2 [[2],[3]]) :: Tensor '[2,1] Int PyString
+      n2 = "n2" <-- $(pyConst2 [[2,0],[0,1]]) :: Tensor '[2,2] Int PyString
+      y = "y" <-- (n2 %* n1) :: Tensor '[2,1] Int PyString
+  in y
+```
+
+Run the model.
+
+```
 main = do
   (retcode,stdout,stderr) <- run testMatMul
   print stdout
