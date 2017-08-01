@@ -17,10 +17,7 @@
 
 module MathFlow.PyString where
 
-import GHC.TypeLits
 import Data.Singletons
-import Data.Singletons.TH
-import Data.Promotion.Prelude
 
 import Data.String
 import qualified Data.List as L
@@ -46,10 +43,11 @@ instance IsString PyString where
   fromString a = PyString [] a
     
 instance FromTensor PyString where
+  fromTensor (TScalar a) = "tf.constant([" <> fromString (show a) <> "])"
   fromTensor (Tensor a)  = a
   fromTensor v@(TConcat a b)  = wrap v
     where
-      wrap :: SingI n => Tensor n a -> PyString
+      wrap :: SingI n => Tensor n t a -> PyString
       wrap t = "tf.concat( [" <> fromTensor a <> ", " <> fromTensor b <> " ]," <> fromString (show (idx (dim t))) <> " )"
       idx i = fst $ head $ filter (\(i,b) -> b ) $ map (\(i,vd,ad) -> (i, vd /= ad)) $ zip3 [0..] i (dim a)
   fromTensor (TAdd a b)  = "tf.add( " <> fromTensor a <> ", " <> fromTensor b <> " )"
@@ -128,7 +126,7 @@ instance ListDimension a => ListDimension [a] where
   listDim a@(x:xs) = (fromIntegral (length a)) : listDim x
 
 genPyType :: [Integer] -> Type
-genPyType dims = (AppT (AppT (ConT ''Tensor) (loop dims)) (ConT ''PyString))
+genPyType dims = (ConT ''Tensor) `AppT` (loop dims) `AppT` (ConT ''Float) `AppT` (ConT ''PyString)
   where
     loop :: [Integer] -> Type
     loop [] = PromotedNilT

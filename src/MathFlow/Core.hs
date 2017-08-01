@@ -69,76 +69,78 @@ type family IsSameProduct (m :: [Nat]) (n :: [Nat]) :: Bool where
 
 
 -- |Dependently typed tensor model
-data Tensor (n::[Nat]) a =
-    Tensor a -- ^ Transform a value to dependently typed value
-  | TAdd (Tensor n a) (Tensor n a)
-  | TSub (Tensor n a) (Tensor n a)
-  | TMul (Tensor n a) (Tensor n a)
-  | TAbs (Tensor n a)
-  | TSign (Tensor n a)
-  | TRep (Tensor (Tail n) a)
-  | TTr (Tensor (Reverse n) a)
-  | forall o m. (SingI o,SingI m,SingI n,IsMatMul m o n ~ 'True) => TMatMul (Tensor m a) (Tensor o a)
-  | forall o m. (SingI o,SingI m,SingI n,IsConcat m o n ~ 'True) => TConcat (Tensor m a) (Tensor o a)
-  | forall m. (SingI m,IsSameProduct m n ~ 'True) => TReshape (Tensor m a)
+data Tensor (n::[Nat]) t a =
+    TScalar t
+  | Tensor a -- ^ Transform a value to dependently typed value
+  | TAdd (Tensor n t a) (Tensor n t a)
+  | TSub (Tensor n t a) (Tensor n t a)
+  | TMul (Tensor n t a) (Tensor n t a)
+  | TAbs (Tensor n t a)
+  | TSign (Tensor n t a)
+  | TRep (Tensor (Tail n) t a)
+  | TTr (Tensor (Reverse n) t a)
+  | forall o m. (SingI o,SingI m,SingI n,IsMatMul m o n ~ 'True) => TMatMul (Tensor m t a) (Tensor o t a)
+  | forall o m. (SingI o,SingI m,SingI n,IsConcat m o n ~ 'True) => TConcat (Tensor m t a) (Tensor o t a)
+  | forall m. (SingI m,IsSameProduct m n ~ 'True) => TReshape (Tensor m t a)
   | forall o m.
     (SingI o,SingI m,
      Last n ~ Last o,
      Last m ~ Head (Tail (Reverse o)),
      (Tail (Reverse n)) ~ (Tail (Reverse m))
     ) =>
-    TConv2d (Tensor m a) (Tensor o a)
-  | forall f m. (SingI f, SingI m,IsSubSamp f m n ~ 'True) => TMaxPool (Sing f) (Tensor m a)
-  | TSoftMax (Tensor n a)
-  | TReLu (Tensor n a)
-  | TNorm (Tensor n a)
-  | forall f m. (SingI f,SingI m,IsSubSamp f m n ~ 'True) => TSubSamp (Sing f) (Tensor m a)
-  | TFunc String (Tensor n a)
-  | TLabel String (Tensor n a)
+    TConv2d (Tensor m t a) (Tensor o t a)
+  | forall f m. (SingI f, SingI m,IsSubSamp f m n ~ 'True) => TMaxPool (Sing f) (Tensor m t a)
+  | TSoftMax (Tensor n t a)
+  | TReLu (Tensor n t a)
+  | TNorm (Tensor n t a)
+  | forall f m. (SingI f,SingI m,IsSubSamp f m n ~ 'True) => TSubSamp (Sing f) (Tensor m t a)
+  | TFunc String (Tensor n t a)
+  | TLabel String (Tensor n t a)
 
 
-instance Num (Tensor n a) where
+instance (Num t) => Num (Tensor n t a) where
   (+) = TAdd
   (-) = TSub
   (*) = TMul
   abs = TAbs
   signum = TSign
+  fromInteger = TScalar . fromInteger
 
 -- | get dimension from tensor
 -- 
--- >>> dim (Tensor 1 :: Tensor '[192,10] Int)
+-- >>> dim (Tensor 1 :: Tensor '[192,10] Float Int)
 -- [192,10]
-dim :: (SingI n) => Tensor n a -> [Integer]
+dim :: (SingI n) => Tensor n t a -> [Integer]
 dim t = dim' $ ty t
   where
-    ty :: (SingI n) => Tensor n a -> Sing n
+    ty :: (SingI n) => Tensor n t a -> Sing n
     ty _ = sing
 
 dim' :: Sing (n::[Nat]) -> [Integer]
 dim' t = fromSing t
 
-toValue :: forall n a. Sing (n::[Nat]) -> a -> Tensor n a
+toValue :: forall n t a. Sing (n::[Nat]) -> a -> Tensor n t a
 toValue _ a = Tensor a
 
---(.+) :: SingI n => Tensor n a -> Tensor n a -> Tensor n a 
+--(.+) :: SingI n => Tensor n t a -> Tensor n t a -> Tensor n t a 
 --(.+) = TAdd
 --
---(.-) :: SingI n => Tensor n a -> Tensor n a -> Tensor n a 
+--(.-) :: SingI n => Tensor n t a -> Tensor n t a -> Tensor n t a 
 --(.-) = TSub
 --
---(.*) :: SingI n => Tensor n a -> Tensor n a -> Tensor n a 
+--(.*) :: SingI n => Tensor n t a -> Tensor n t a -> Tensor n t a 
 --(.*) = TMul
 
-(%*) :: forall o m n a. (SingI o,SingI m,SingI n,IsMatMul m o n ~ 'True)
-     => Tensor m a -> Tensor o a -> Tensor n a
+(%*) :: forall o m n t a. (SingI o,SingI m,SingI n,IsMatMul m o n ~ 'True)
+     => Tensor m t a -> Tensor o t a -> Tensor n t a
 (%*) a b = TMatMul a b
 
-(<--) :: SingI n => String -> Tensor n a  -> Tensor n a 
+(<--) :: SingI n => String -> Tensor n t a  -> Tensor n t a 
 (<--) = TLabel
 
 
 class FromTensor a where
-  fromTensor :: Tensor n a -> a
-  toString :: Tensor n a -> String
-  run :: Tensor n a -> IO (Int,String,String)
+  fromTensor :: (Num t,Show t) => Tensor n t a -> a
+  toString :: (Num t,Show t) => Tensor n t a -> String
+  run :: (Num t,Show t) => Tensor n t a -> IO (Int,String,String)
 

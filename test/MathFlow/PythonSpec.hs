@@ -46,41 +46,41 @@ src = [lbt|
           |]
 
 
-testNet :: Tensor '[1] PyString
+testNet :: Tensor '[1] Float PyString
 testNet = 
-  let n1 = "n1" <-- (Tensor "tf.constant(1)") :: Tensor '[1] PyString
-      n2 = "n2" <-- (Tensor "tf.constant(2)") :: Tensor '[1] PyString
-      n3 = "n3" <-- (Tensor "tf.constant(3)") :: Tensor '[1] PyString
-      y = "y" <-- (n1 + n2 + n3) :: Tensor '[1] PyString
+  let n1 = "n1" <-- (Tensor "tf.constant(1)") :: Tensor '[1] Float PyString
+      n2 = "n2" <-- (Tensor "tf.constant(2)") :: Tensor '[1] Float PyString
+      n3 = "n3" <-- (Tensor "tf.constant(3)") :: Tensor '[1] Float PyString
+      y = "y" <-- (n1 + n2 + n3) :: Tensor '[1] Float PyString
   in y
 
-testSub :: Tensor '[1] PyString
+testSub :: Tensor '[1] Float PyString
 testSub = 
-  let n1 = "n1" <-- (Tensor "tf.constant(100)") :: Tensor '[1] PyString
-      n2 = "n2" <-- (Tensor "tf.constant(50)") :: Tensor '[1] PyString
-      n3 = "n3" <-- (Tensor "tf.constant(2)") :: Tensor '[1] PyString
-      y = "y" <-- (n3 * (n1 - n2))  :: Tensor '[1] PyString
+  let n1 = "n1" <-- (Tensor "tf.constant(100)") :: Tensor '[1] Float PyString
+      n2 = "n2" <-- (Tensor "tf.constant(50)") :: Tensor '[1] Float PyString
+      n3 = "n3" <-- (Tensor "tf.constant(2)") :: Tensor '[1] Float PyString
+      y = "y" <-- (n3 * (n1 - n2))  :: Tensor '[1] Float PyString
   in y
 
-testMatMul :: Tensor '[2,1] PyString
+testMatMul :: Tensor '[2,1] Float PyString
 testMatMul = 
-  let n1 = "n1" <-- $(pyConst2 [[2],[3]]) :: Tensor '[2,1] PyString
-      n2 = "n2" <-- $(pyConst2 [[2,0],[0,1]]) :: Tensor '[2,2] PyString
-      y = "y" <-- (n2 %* n1) :: Tensor '[2,1] PyString
+  let n1 = "n1" <-- $(pyConst2 [[2],[3]]) :: Tensor '[2,1] Float PyString
+      n2 = "n2" <-- $(pyConst2 [[2,0],[0,1]]) :: Tensor '[2,2] Float PyString
+      y = "y" <-- (n2 %* n1) :: Tensor '[2,1] Float PyString
   in y
 
-testConcat :: Tensor '[2,2] PyString
+testConcat :: Tensor '[2,2] Float PyString
 testConcat = 
-  let n1 = "n1" <-- (Tensor "tf.constant([[2],[3]])") :: Tensor '[2,1] PyString
-      n2 = "n2" <-- (Tensor "tf.constant([[2],[3]])") :: Tensor '[2,1] PyString
-      y = "y" <-- (TConcat n1 n2) :: Tensor '[2,2] PyString
+  let n1 = "n1" <-- (Tensor "tf.constant([[2],[3]])") :: Tensor '[2,1] Float PyString
+      n2 = "n2" <-- (Tensor "tf.constant([[2],[3]])") :: Tensor '[2,1] Float PyString
+      y = "y" <-- (TConcat n1 n2) :: Tensor '[2,2] Float PyString
   in y
 
-testReplicate :: Tensor '[2,2] PyString
+testReplicate :: Tensor '[2,2] Float PyString
 testReplicate = 
-  let n1 = "n1" <-- (Tensor "tf.constant([[2],[3]])") :: Tensor '[2,1] PyString
-      n2 = "n2" <-- (Tensor "tf.constant([[2],[3]])") :: Tensor '[2,1] PyString
-      y = "y" <-- (TConcat n1 n2) :: Tensor '[2,2] PyString
+  let n1 = "n1" <-- (Tensor "tf.constant([[2],[3]])") :: Tensor '[2,1] Float PyString
+      n2 = "n2" <-- (Tensor "tf.constant([[2],[3]])") :: Tensor '[2,1] Float PyString
+      y = "y" <-- (TConcat n1 n2) :: Tensor '[2,2] Float PyString
   in y
 
 #ifdef USE_PYTHON
