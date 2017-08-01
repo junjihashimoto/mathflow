@@ -51,7 +51,7 @@ testNet =
   let n1 = "n1" <-- (Tensor "tf.constant(1)") :: Tensor '[1] PyString
       n2 = "n2" <-- (Tensor "tf.constant(2)") :: Tensor '[1] PyString
       n3 = "n3" <-- (Tensor "tf.constant(3)") :: Tensor '[1] PyString
-      y = "y" <-- (n1 .+ n2 .+ n3) :: Tensor '[1] PyString
+      y = "y" <-- (n1 + n2 + n3) :: Tensor '[1] PyString
   in y
 
 testSub :: Tensor '[1] PyString
@@ -59,7 +59,7 @@ testSub =
   let n1 = "n1" <-- (Tensor "tf.constant(100)") :: Tensor '[1] PyString
       n2 = "n2" <-- (Tensor "tf.constant(50)") :: Tensor '[1] PyString
       n3 = "n3" <-- (Tensor "tf.constant(2)") :: Tensor '[1] PyString
-      y = "y" <-- (n3 .* (n1 .- n2))  :: Tensor '[1] PyString
+      y = "y" <-- (n3 * (n1 - n2))  :: Tensor '[1] PyString
   in y
 
 testMatMul :: Tensor '[2,1] PyString

@@ -33,7 +33,7 @@ testSingleNet =
       w = "w" <-- (Tensor "w") :: Tensor '[784,10] PyString
       b = "b" <-- (Tensor "b") :: Tensor '[10] PyString
       z = "z" <-- TRep b :: Tensor '[100,10] PyString
-      y' = (x %* w) .+ z :: Tensor '[100,10] PyString
+      y' = (x %* w) + z :: Tensor '[100,10] PyString
       y = "y" <-- TFunc "softmax" y' :: Tensor '[100,10] PyString
   in y
 
@@ -71,7 +71,7 @@ testConvNet2 x' =
       w = Tensor "" :: Tensor '[IMAGE_SIZE_4*IMAGE_SIZE_4*64,384] PyString
       b = Tensor "" :: Tensor '[384] PyString
       z = TRep b :: Tensor '[s,384] PyString
-      y' = (x %* w) .+ z :: Tensor '[s,384] PyString
+      y' = (x %* w) + z :: Tensor '[s,384] PyString
       y = TReLu y' :: Tensor '[s,384] PyString
   in y
 
@@ -80,7 +80,7 @@ testConvNet3 x =
   let w = Tensor "" :: Tensor '[384,192] PyString
       b = Tensor "" :: Tensor '[192] PyString
       z = TRep b :: Tensor '[s,192] PyString
-      y' = (x %* w) .+ z :: Tensor '[s,192] PyString
+      y' = (x %* w) + z :: Tensor '[s,192] PyString
       y = TReLu y' :: Tensor '[s,192] PyString
   in y
 
@@ -89,7 +89,7 @@ testConvNet4 x =
   let w = Tensor "" :: Tensor '[192,10] PyString
       b = Tensor "" :: Tensor '[10] PyString
       z = TRep b :: Tensor '[s,10] PyString
-      y = (x %* w) .+ z :: Tensor '[s,10] PyString
+      y = (x %* w) + z :: Tensor '[s,10] PyString
   in y
 
 testImage :: Tensor '[BATCH_SIZE,IMAGE_SIZE,IMAGE_SIZE,3] PyString

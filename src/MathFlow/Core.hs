@@ -74,6 +74,8 @@ data Tensor (n::[Nat]) a =
   | TAdd (Tensor n a) (Tensor n a)
   | TSub (Tensor n a) (Tensor n a)
   | TMul (Tensor n a) (Tensor n a)
+  | TAbs (Tensor n a)
+  | TSign (Tensor n a)
   | TRep (Tensor (Tail n) a)
   | TTr (Tensor (Reverse n) a)
   | forall o m. (SingI o,SingI m,SingI n,IsMatMul m o n ~ 'True) => TMatMul (Tensor m a) (Tensor o a)
@@ -95,6 +97,13 @@ data Tensor (n::[Nat]) a =
   | TLabel String (Tensor n a)
 
 
+instance Num (Tensor n a) where
+  (+) = TAdd
+  (-) = TSub
+  (*) = TMul
+  abs = TAbs
+  signum = TSign
+
 -- | get dimension from tensor
 -- 
 -- >>> dim (Tensor 1 :: Tensor '[192,10] Int)
@@ -111,14 +120,14 @@ dim' t = fromSing t
 toValue :: forall n a. Sing (n::[Nat]) -> a -> Tensor n a
 toValue _ a = Tensor a
 
-(.+) :: SingI n => Tensor n a -> Tensor n a -> Tensor n a 
-(.+) = TAdd
-
-(.-) :: SingI n => Tensor n a -> Tensor n a -> Tensor n a 
-(.-) = TSub
-
-(.*) :: SingI n => Tensor n a -> Tensor n a -> Tensor n a 
-(.*) = TMul
+--(.+) :: SingI n => Tensor n a -> Tensor n a -> Tensor n a 
+--(.+) = TAdd
+--
+--(.-) :: SingI n => Tensor n a -> Tensor n a -> Tensor n a 
+--(.-) = TSub
+--
+--(.*) :: SingI n => Tensor n a -> Tensor n a -> Tensor n a 
+--(.*) = TMul
 
 (%*) :: forall o m n a. (SingI o,SingI m,SingI n,IsMatMul m o n ~ 'True)
      => Tensor m a -> Tensor o a -> Tensor n a
