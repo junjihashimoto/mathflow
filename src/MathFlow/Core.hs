@@ -70,30 +70,30 @@ type family IsSameProduct (m :: [Nat]) (n :: [Nat]) :: Bool where
 
 -- |Dependently typed tensor model
 data Tensor (n::[Nat]) t a =
-    TScalar t
+    TScalar t -- ^ Scalar value
   | Tensor a -- ^ Transform a value to dependently typed value
-  | TAdd (Tensor n t a) (Tensor n t a)
-  | TSub (Tensor n t a) (Tensor n t a)
-  | TMul (Tensor n t a) (Tensor n t a)
-  | TAbs (Tensor n t a)
-  | TSign (Tensor n t a)
-  | TRep (Tensor (Tail n) t a)
-  | TTr (Tensor (Reverse n) t a)
-  | forall o m. (SingI o,SingI m,SingI n,IsMatMul m o n ~ 'True) => TMatMul (Tensor m t a) (Tensor o t a)
-  | forall o m. (SingI o,SingI m,SingI n,IsConcat m o n ~ 'True) => TConcat (Tensor m t a) (Tensor o t a)
-  | forall m. (SingI m,IsSameProduct m n ~ 'True) => TReshape (Tensor m t a)
+  | TAdd (Tensor n t a) (Tensor n t a) -- ^ + of Num
+  | TSub (Tensor n t a) (Tensor n t a) -- ^ - of Num
+  | TMul (Tensor n t a) (Tensor n t a) -- ^ * of Num
+  | TAbs (Tensor n t a) -- ^ abs of Num
+  | TSign (Tensor n t a) -- ^ signum of Num
+  | TRep (Tensor (Tail n) t a) -- ^ vector wise operator
+  | TTr (Tensor (Reverse n) t a) -- ^ tensor tansporse operator
+  | forall o m. (SingI o,SingI m,SingI n,IsMatMul m o n ~ 'True) => TMatMul (Tensor m t a) (Tensor o t a) -- ^ matrix multiply
+  | forall o m. (SingI o,SingI m,SingI n,IsConcat m o n ~ 'True) => TConcat (Tensor m t a) (Tensor o t a) -- ^ concat operator
+  | forall m. (SingI m,IsSameProduct m n ~ 'True) => TReshape (Tensor m t a) -- ^ reshape function
   | forall o m.
     (SingI o,SingI m,
      Last n ~ Last o,
      Last m ~ Head (Tail (Reverse o)),
      (Tail (Reverse n)) ~ (Tail (Reverse m))
     ) =>
-    TConv2d (Tensor m t a) (Tensor o t a)
-  | forall f m. (SingI f, SingI m,IsSubSamp f m n ~ 'True) => TMaxPool (Sing f) (Tensor m t a)
+    TConv2d (Tensor m t a) (Tensor o t a) -- ^ conv2d function
+  | forall f m. (SingI f, SingI m,IsSubSamp f m n ~ 'True) => TMaxPool (Sing f) (Tensor m t a)  -- ^ max pool
   | TSoftMax (Tensor n t a)
   | TReLu (Tensor n t a)
   | TNorm (Tensor n t a)
-  | forall f m. (SingI f,SingI m,IsSubSamp f m n ~ 'True) => TSubSamp (Sing f) (Tensor m t a)
+  | forall f m. (SingI f,SingI m,IsSubSamp f m n ~ 'True) => TSubSamp (Sing f) (Tensor m t a) -- ^ subsampling function
   | TFunc String (Tensor n t a)
   | TLabel String (Tensor n t a)
 
@@ -110,14 +110,17 @@ instance (Num t) => Num (Tensor n t a) where
 -- 
 -- >>> dim (Tensor 1 :: Tensor '[192,10] Float Int)
 -- [192,10]
-dim :: (SingI n) => Tensor n t a -> [Integer]
-dim t = dim' $ ty t
-  where
-    ty :: (SingI n) => Tensor n t a -> Sing n
-    ty _ = sing
+class Dimension a where
+  dim :: a -> [Integer]
 
-dim' :: Sing (n::[Nat]) -> [Integer]
-dim' t = fromSing t
+instance (SingI n) => Dimension (Tensor n t a) where
+  dim t = dim $ ty t
+    where
+      ty :: (SingI n) => Tensor n t a -> Sing n
+      ty _ = sing
+
+instance Dimension (Sing (n::[Nat])) where
+  dim t = fromSing t
 
 toValue :: forall n t a. Sing (n::[Nat]) -> a -> Tensor n t a
 toValue _ a = Tensor a

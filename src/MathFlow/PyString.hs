@@ -44,17 +44,19 @@ instance IsString PyString where
     
 instance FromTensor PyString where
   fromTensor (TScalar a) = "tf.constant([" <> fromString (show a) <> "])"
-  fromTensor (Tensor a)  = a
+  fromTensor (Tensor a) = a
   fromTensor v@(TConcat a b)  = wrap v
     where
       wrap :: SingI n => Tensor n t a -> PyString
       wrap t = "tf.concat( [" <> fromTensor a <> ", " <> fromTensor b <> " ]," <> fromString (show (idx (dim t))) <> " )"
-      idx i = fst $ head $ filter (\(i,b) -> b ) $ map (\(i,vd,ad) -> (i, vd /= ad)) $ zip3 [0..] i (dim a)
+      idx ii = fst $ head $ filter (\(_,b') -> b') $ map (\(i,vd,ad) -> (i, vd /= ad)) $ zip3 [0..] ii (dim a)
   fromTensor (TAdd a b)  = "tf.add( " <> fromTensor a <> ", " <> fromTensor b <> " )"
   fromTensor (TSub a b)  = "tf.add( " <> fromTensor a <> ", tf.negative( " <> fromTensor b <> " ) )"
   fromTensor (TMul a b)  = "tf.multiply( " <> fromTensor a <> ", " <> fromTensor b <> " )"
   fromTensor (TRep a)  = fromTensor a
   fromTensor (TTr a)  = "tf.transpose( " <> fromTensor a <> " )"
+  fromTensor (TAbs a)  = "tf.abs( " <> fromTensor a <> " )"
+  fromTensor (TSign a)  = "tf.sign( " <> fromTensor a <> " )"
   fromTensor (TLabel str a)  = PyString ((str <> " = " <> e):v) str
     where
       (PyString v e) = fromTensor a
@@ -70,9 +72,9 @@ instance FromTensor PyString where
   fromTensor (TMaxPool a b)  = "tf.nn.max_pool( " <>
                                fromTensor b <>
                                ", ksize=" <>
-                               fromString (show $ dim' a) <>
+                               fromString (show $ dim a) <>
                                ", strides=" <>
-                               fromString (show $ map (const (1::Integer)) (dim' a) ) <>
+                               fromString (show $ map (const (1::Integer)) (dim a) ) <>
                                ", padding='SAME' )"
   fromTensor (TSoftMax a)  = "tf.nn.softmax( " <> fromTensor a <> " )"
   fromTensor (TReLu a)  = "tf.nn.relu( " <> fromTensor a <> " )"
@@ -123,7 +125,7 @@ instance ListDimension Integer where
 
 instance ListDimension a => ListDimension [a] where
   listDim [] = []
-  listDim a@(x:xs) = (fromIntegral (length a)) : listDim x
+  listDim a@(x:_) = (fromIntegral (length a)) : listDim x
 
 genPyType :: [Integer] -> Type
 genPyType dims = (ConT ''Tensor) `AppT` (loop dims) `AppT` (ConT ''Float) `AppT` (ConT ''PyString)
