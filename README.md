@@ -45,8 +45,8 @@ Write tensorflow-model.
 ```
 testMatMul :: Tensor '[2,1] Int PyString
 testMatMul = 
-  let n1 = "n1" <-- $(pyConst2 [[2],[3]]) :: Tensor '[2,1] Int PyString
-      n2 = "n2" <-- $(pyConst2 [[2,0],[0,1]]) :: Tensor '[2,2] Int PyString
+  let n1 = "n1" <-- (Tensor "tf.constant([[2],[3]])") :: Tensor '[2,1] Int PyString
+      n2 = "n2" <-- (Tensor "tf.constant([[2,0],[0,1]])") :: Tensor '[2,2] Int PyString
       y = "y" <-- (n2 %* n1) :: Tensor '[2,1] Int PyString
   in y
 ```
