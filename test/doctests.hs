@@ -21,5 +21,8 @@ main = do
     "-XDefaultSignatures",
     "-XTypeInType",
     "src/MathFlow/Core.hs",
-    "src/MathFlow/PyString.hs"
+    "src/MathFlow/PyString.hs",
+    "src/MathFlow/TF.hs",
+    "src/MathFlow/TF/NN.hs",
+    "src/MathFlow/TF/Train.hs"
     ]

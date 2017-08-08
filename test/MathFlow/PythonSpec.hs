@@ -25,6 +25,7 @@ import Data.Singletons.TypeLits
 import Data.Singletons.TH
 import Data.Promotion.Prelude
 import MathFlow
+import MathFlow.TF
 
 import Test.Hspec
 import Test.Hspec.Server
@@ -89,6 +90,10 @@ spec = do
     it "command test" $ do
       command "python3" [] (T.unpack src) @>=  exit 0 <> stdout "6\n"
   describe "run pystring" $ with localhost $ do
+    it "abs" $ do
+      let src = toRunnableString (fromTensor (abs' (Tensor "tf.constant(-100)" :: Tensor '[1] Float PyString) "\"x\""))
+      liftIO $ putStr src
+      command "python3" [] src @>=  exit 0 <> stdout "100\n"
     it "adder" $ do
       command "python3" [] (toRunnableString (fromTensor testNet)) @>=  exit 0 <> stdout "6\n"
     it "subtract" $ do

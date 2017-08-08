@@ -43,7 +43,7 @@ instance IsString PyString where
   fromString a = PyString [] a
     
 instance FromTensor PyString where
-  fromTensor (TScalar a) = "tf.constant([" <> fromString (show a) <> "])"
+--  fromTensor (TScalar (a:: Integer)) = "tf.constant([" <> fromString (show a) <> "])"
   fromTensor (Tensor a) = a
   fromTensor v@(TConcat a b)  = wrap v
     where
@@ -81,6 +81,19 @@ instance FromTensor PyString where
   fromTensor (TNorm a)  = "tf.nn.lrn( " <> fromTensor a <> " )"
   fromTensor (TSubSamp a b) = undefined
   fromTensor (TFunc a b) = fromString a <> "( " <> fromTensor b <> " )"
+  fromTensor (TApp (TSym func) other) = fromString func <> "(" <> fromTensor other <> ")"
+  fromTensor (TApp a@(TArgT name t) other) = fromTensor a <> "," <> fromTensor other
+  fromTensor (TApp a@(TArgS name t) other) = fromTensor a <> "," <> fromTensor other
+  fromTensor (TApp a@(TArgI name t) other) = fromTensor a <> "," <> fromTensor other
+  fromTensor (TApp a@(TArgF name t) other) = fromTensor a <> "," <> fromTensor other
+  fromTensor (TApp a@(TArgD name t) other) = fromTensor a <> "," <> fromTensor other
+  fromTensor (TApp a@(TArgSing name t) other) = fromTensor a <> "," <> fromTensor other
+  fromTensor (TArgT name t) = fromString name <> "=" <> fromTensor t
+  fromTensor (TArgS name t) = fromString name <> "=" <> fromString t
+  fromTensor (TArgI name t) = fromString name <> "=" <> fromString (show t)
+  fromTensor (TArgF name t) = fromString name <> "=" <> fromString (show t)
+  fromTensor (TArgD name t) = fromString name <> "=" <> fromString (show t)
+  fromTensor (TArgSing name t) = fromString name <> "=" <> fromString (show $ dim t)
 
   toString a = L.intercalate "\n" $ reverse e ++ [v]
     where
@@ -132,10 +145,10 @@ genPyType dims = (ConT ''Tensor) `AppT` (loop dims) `AppT` (ConT ''Float) `AppT`
   where
     loop :: [Integer] -> Type
     loop [] = PromotedNilT
-    loop (x:xs) = (AppT (AppT PromotedConsT (LitT (NumTyLit x))) (loop xs))
+    loop (x:xs) = PromotedConsT `AppT` (LitT (NumTyLit x)) `AppT` (loop xs)
 
 genPyExp :: Show a => a -> Exp
-genPyExp values =  (AppE (ConE 'Tensor) (LitE (StringL ("tf.constant(" <> show values <> ")"))))
+genPyExp values =  (ConE 'Tensor) `AppE` (LitE (StringL ("tf.constant(" <> show values <> ")")))
 
 -- | Gen tensorflow constant expression
 --

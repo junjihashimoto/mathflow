@@ -38,6 +38,8 @@ Model has a type of ```Tensor (dimensions:[Nat]) value-type output-type```.
 * ```value-type``` is a value type like Integer or Float of [tensorflow-data-types](https://www.tensorflow.org/programmers_guide/dims_types). 
 * ```output-type``` is a type of code which this package generates. PyString-type is used for generating python-code.
 
+
+
 ## Create model and run it
 
 Write tensorflow-model.

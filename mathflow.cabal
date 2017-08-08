@@ -27,6 +27,9 @@ library
   exposed-modules:     MathFlow
                      , MathFlow.Core
                      , MathFlow.PyString
+                     , MathFlow.TF
+                     , MathFlow.TF.NN
+                     , MathFlow.TF.Train
   build-depends:       base >= 4.7 && < 5
                      , singletons
 --                     , tensorflow

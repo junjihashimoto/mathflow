@@ -69,8 +69,10 @@ type family IsSameProduct (m :: [Nat]) (n :: [Nat]) :: Bool where
 
 
 -- |Dependently typed tensor model
+--
+-- This model includes basic arithmetic operators and tensorflow functions.
 data Tensor (n::[Nat]) t a =
-    TScalar t -- ^ Scalar value
+    (Num t) => TScalar t -- ^ Scalar value
   | Tensor a -- ^ Transform a value to dependently typed value
   | TAdd (Tensor n t a) (Tensor n t a) -- ^ + of Num
   | TSub (Tensor n t a) (Tensor n t a) -- ^ - of Num
@@ -89,14 +91,26 @@ data Tensor (n::[Nat]) t a =
      (Tail (Reverse n)) ~ (Tail (Reverse m))
     ) =>
     TConv2d (Tensor m t a) (Tensor o t a) -- ^ conv2d function
-  | forall f m. (SingI f, SingI m,IsSubSamp f m n ~ 'True) => TMaxPool (Sing f) (Tensor m t a)  -- ^ max pool
+  | forall f m. (SingI f, SingI m,IsSubSamp f m n ~ 'True) => TMaxPool (Sing f) (Tensor m t a) -- ^ max pool
   | TSoftMax (Tensor n t a)
   | TReLu (Tensor n t a)
   | TNorm (Tensor n t a)
   | forall f m. (SingI f,SingI m,IsSubSamp f m n ~ 'True) => TSubSamp (Sing f) (Tensor m t a) -- ^ subsampling function
+  | forall m t2. TApp (Tensor n t a) (Tensor m t2 a)
   | TFunc String (Tensor n t a)
-  | TLabel String (Tensor n t a)
+  | TSym String
+  | TArgT String (Tensor n t a)
+  | TArgS String String
+  | TArgI String Integer
+  | TArgF String Float
+  | TArgD String Double
+  | forall f. (SingI f) => TArgSing String (Sing (f::[Nat]))
+  | TLabel String (Tensor n t a) -- ^ When generating code, this label is used.
 
+(<+>) :: forall n t a m t2. (Tensor n t a) -> (Tensor m t2 a) -> (Tensor n t a)
+(<+>) = TApp
+
+infixr 4 <+>
 
 instance (Num t) => Num (Tensor n t a) where
   (+) = TAdd
@@ -105,6 +119,7 @@ instance (Num t) => Num (Tensor n t a) where
   abs = TAbs
   signum = TSign
   fromInteger = TScalar . fromInteger
+
 
 -- | get dimension from tensor
 -- 
@@ -134,7 +149,7 @@ toValue _ a = Tensor a
 
 
 class FromTensor a where
-  fromTensor :: (Num t,Show t) => Tensor n t a -> a
-  toString :: (Num t,Show t) => Tensor n t a -> String
-  run :: (Num t,Show t) => Tensor n t a -> IO (Int,String,String)
+  fromTensor :: Tensor n t a -> a
+  toString :: Tensor n t a -> String
+  run :: Tensor n t a -> IO (Int,String,String)
 
