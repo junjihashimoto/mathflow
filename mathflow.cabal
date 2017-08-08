@@ -11,6 +11,7 @@ copyright:           2017 Junji Hashimoto
 category:            Math
 build-type:          Simple
 extra-source-files:  README.md
+                   , util/gen_function_list.py
 cabal-version:       >=1.10
 stability:           Experimental
 
